@@ -248,13 +248,16 @@ def get_negative_report(db: Session = Depends(database.get_db)):
 # NEW: Retailer list endpoint
 @app.get("/retailers", response_model=List[schemas.RetailerOut])
 def list_retailers(db: Session = Depends(database.get_db)):
-    """
-    Get list of all retailers
-    
-    Returns retailers sorted by retailer_code
-    """
     retailers = db.query(Retailer).order_by(Retailer.retailer_code).all()
-    return [schemas.RetailerOut.from_orm(r) for r in retailers]
+    return [
+        schemas.RetailerOut(
+            id=r.id,
+            retailer_code=r.retailer_code,
+            name=r.name,
+        )
+        for r in retailers
+    ]
+
 
 
 # NEW: Bulk Tally sync endpoint
