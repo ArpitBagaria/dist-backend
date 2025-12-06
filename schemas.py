@@ -1,5 +1,5 @@
 """Pydantic schemas for API request/response validation"""
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -74,3 +74,23 @@ class TallySyncRequest(BaseModel):
 
 class TallySyncResponse(BaseModel):
     synced: int
+
+
+# Auto-approval engine schemas
+class OrderItemInput(BaseModel):
+    goods_id: str
+    quantity: int
+
+
+class AutoApprovalRequest(BaseModel):
+    retailer_code: str
+    items: List[OrderItemInput]
+
+
+class AutoApprovalDecision(BaseModel):
+    decision: Literal["APPROVE", "HOLD", "REJECT"]
+    risk_score: float
+    order_value: float
+    od_amount: float
+    recent_sales_30d_value: float
+    rules_triggered: List[str]

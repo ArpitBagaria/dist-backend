@@ -10,6 +10,7 @@ import schemas
 from models import Retailer, Product, PrmInventorySnapshot, PrmSyncRunLog, PriceHistory, TallyLedgerCache
 from prm_importer import import_prm_imei_file
 from tally_cache import get_closing_balance_with_cache
+from approval_engine import run_auto_approval
 
 # FIXED: Single app initialization with proper configuration
 app = FastAPI(
@@ -382,13 +383,13 @@ def get_sync_logs(
         .order_by(PrmSyncRunLog.started_at.desc())\
         .limit(limit)\
         .all()
-    
+
     result = []
     for log in logs:
         duration = None
         if log.finished_at and log.started_at:
             duration = int((log.finished_at - log.started_at).total_seconds())
-        
+
         result.append({
             "id": log.id,
             "started_at": log.started_at.isoformat(),
@@ -398,5 +399,37 @@ def get_sync_logs(
             "duration_seconds": duration,
             "error_message": log.error_message
         })
-    
+
     return {"total": len(result), "logs": result}
+
+
+@app.post("/orders/auto-approval", response_model=schemas.AutoApprovalDecision)
+def auto_approval(
+    request: schemas.AutoApprovalRequest,
+    db: Session = Depends(database.get_db),
+):
+    """
+    Simulate / run auto-approval decision for a potential order.
+
+    This does NOT persist an order yet; it only returns:
+    - decision: APPROVE / HOLD / REJECT
+    - risk_score
+    - order_value
+    - od_amount
+    - recent_sales_30d_value
+    - rules_triggered[]
+    """
+    try:
+        result = run_auto_approval(
+            db=db,
+            retailer_code=request.retailer_code,
+            items=[item.dict() for item in request.items],
+        )
+        return result
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to run auto-approval: {str(e)}",
+        )
