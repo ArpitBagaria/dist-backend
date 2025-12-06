@@ -1,4 +1,6 @@
 """Main FastAPI application"""
+import os
+from typing import List
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -24,6 +26,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# NEW: Read Tally Sync API Key from environment
+TALLY_SYNC_API_KEY = os.getenv("TALLY_SYNC_API_KEY", "")
 
 
 @app.on_event("startup")
@@ -238,6 +243,74 @@ def get_negative_report(db: Session = Depends(database.get_db)):
         "generated_at": datetime.now(),
         "rows": sorted(report_rows, key=lambda x: x['od_amount'], reverse=True)
     }
+
+
+# NEW: Retailer list endpoint
+@app.get("/retailers", response_model=List[schemas.RetailerOut])
+def list_retailers(db: Session = Depends(database.get_db)):
+    """
+    Get list of all retailers
+    
+    Returns retailers sorted by retailer_code
+    """
+    retailers = db.query(Retailer).order_by(Retailer.retailer_code).all()
+    return [schemas.RetailerOut.from_orm(r) for r in retailers]
+
+
+# NEW: Bulk Tally sync endpoint
+@app.post("/tally-sync/bulk-ledger-balances", response_model=schemas.TallySyncResponse)
+def sync_tally_balances(
+    payload: schemas.TallySyncRequest,
+    db: Session = Depends(database.get_db),
+):
+    """
+    Bulk sync Tally ledger balances
+    
+    This endpoint is called by the Tally Sync Agent to update
+    cached ledger balances for multiple retailers at once.
+    
+    Requires API key authentication.
+    """
+    # Simple API key check
+    if TALLY_SYNC_API_KEY and payload.api_key != TALLY_SYNC_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    synced = 0
+
+    for entry in payload.entries:
+        retailer = (
+            db.query(Retailer)
+            .filter(Retailer.retailer_code == entry.retailer_code)
+            .first()
+        )
+        if not retailer:
+            # Skip unknown retailer codes
+            continue
+
+        cache_entry = (
+            db.query(TallyLedgerCache)
+            .filter(TallyLedgerCache.retailer_id == retailer.id)
+            .order_by(TallyLedgerCache.as_of.desc())
+            .first()
+        )
+
+        if cache_entry:
+            cache_entry.closing_balance = entry.closing_balance
+            cache_entry.as_of = entry.as_of
+            cache_entry.ledger_name = entry.retailer_code
+        else:
+            cache_entry = TallyLedgerCache(
+                retailer_id=retailer.id,
+                ledger_name=entry.retailer_code,
+                closing_balance=entry.closing_balance,
+                as_of=entry.as_of,
+            )
+            db.add(cache_entry)
+
+        synced += 1
+
+    db.commit()
+    return schemas.TallySyncResponse(synced=synced)
 
 
 @app.get("/debug/price-history")

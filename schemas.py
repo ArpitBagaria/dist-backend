@@ -48,3 +48,29 @@ class NegativeReportRow(BaseModel):
 class NegativeReportResponse(BaseModel):
     generated_at: datetime
     rows: List[NegativeReportRow]
+
+
+# NEW: Retailer list API schema
+class RetailerOut(BaseModel):
+    id: int
+    retailer_code: str
+    name: str
+
+    class Config:
+        orm_mode = True
+
+
+# NEW: Tally sync schemas
+class TallySyncEntry(BaseModel):
+    retailer_code: str
+    closing_balance: float
+    as_of: datetime
+
+
+class TallySyncRequest(BaseModel):
+    api_key: str
+    entries: List[TallySyncEntry]
+
+
+class TallySyncResponse(BaseModel):
+    synced: int
