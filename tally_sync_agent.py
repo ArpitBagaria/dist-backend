@@ -21,7 +21,7 @@ from xml.etree import ElementTree as ET
 
 BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", "http://127.0.0.1:8000")
 TALLY_HOST = os.getenv("TALLY_HOST", "http://192.168.31.65:9000")
-TALLY_SYNC_API_KEY = os.getenv("TALLY_SYNC_API_KEY", "change_me_for_production")
+TALLY_SYNC_API_KEY = "123456"
 
 
 def get_all_retailer_codes() -> List[str]:
