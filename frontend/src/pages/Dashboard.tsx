@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
-import { api, NegativeReportRow } from '../api/client';
+import { getRetailers, getNegativeReport } from '../api/retailers';
+import api from '../api/client';
+
+interface NegativeReportRow {
+  retailer_code: string;
+  retailer_name: string;
+  closing_balance: number;
+  stock_value: number;
+  od_amount: number;
+}
 
 interface Stats {
   totalRetailers: number;
@@ -23,13 +32,14 @@ export default function Dashboard() {
       setLoading(true);
       setError('');
 
-      const [retailers, report, syncLogs] = await Promise.all([
-        api.get<Array<{ id: number }>>('/retailers'),
-        api.get<{ rows: NegativeReportRow[] }>('/reports/negative'),
-        api.get<{ logs: Array<{ finished_at: string | null }> }>('/debug/sync-logs?limit=1'),
+      const [retailers, report, syncLogsRes] = await Promise.all([
+        getRetailers(),
+        getNegativeReport(),
+        api.get('/debug/sync-logs?limit=1'),
       ]);
 
-      const totalOd = report.rows.reduce((sum, row) => sum + row.od_amount, 0);
+      const syncLogs = syncLogsRes.data;
+      const totalOd = report.rows.reduce((sum: number, row: NegativeReportRow) => sum + row.od_amount, 0);
       const lastSync = syncLogs.logs[0]?.finished_at || 'Never';
 
       setStats({

@@ -1,5 +1,18 @@
 import { useState } from 'react';
-import { api, NegativeReport } from '../api/client';
+import { getNegativeReport } from '../api/retailers';
+
+interface NegativeReportRow {
+  retailer_code: string;
+  retailer_name: string;
+  closing_balance: number;
+  stock_value: number;
+  od_amount: number;
+}
+
+interface NegativeReport {
+  generated_at: string;
+  rows: NegativeReportRow[];
+}
 
 export default function Reports() {
   const [report, setReport] = useState<NegativeReport | null>(null);
@@ -10,7 +23,7 @@ export default function Reports() {
     try {
       setLoading(true);
       setError('');
-      const data = await api.get<NegativeReport>('/reports/negative');
+      const data = await getNegativeReport();
       setReport(data);
     } catch (err: unknown) {
       setError((err as Error).message || 'Failed to generate report');

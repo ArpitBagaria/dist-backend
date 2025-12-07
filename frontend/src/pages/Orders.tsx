@@ -1,9 +1,23 @@
 import { useState } from 'react';
-import { api, AutoApprovalDecision, AutoApprovalRequest } from '../api/client';
+import { autoApproval } from '../api/orders';
 
 interface OrderItem {
   goods_id: string;
   quantity: number;
+}
+
+interface AutoApprovalRequest {
+  retailer_code: string;
+  items: OrderItem[];
+}
+
+interface AutoApprovalDecision {
+  decision: 'APPROVE' | 'HOLD' | 'REJECT';
+  risk_score: number;
+  order_value: number;
+  od_amount: number;
+  recent_sales_30d_value: number;
+  rules_triggered: string[];
 }
 
 export default function Orders() {
@@ -49,7 +63,7 @@ export default function Orders() {
         items: validItems,
       };
 
-      const decision = await api.post<AutoApprovalDecision>('/orders/auto-approval', request);
+      const decision = await autoApproval(request);
       setResult(decision);
     } catch (err: unknown) {
       setError((err as Error).message || 'Failed to check order approval');

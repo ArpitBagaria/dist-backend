@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { api, Retailer } from '../api/client';
+import { getRetailers } from '../api/retailers';
+
+interface Retailer {
+  id: number;
+  retailer_code: string;
+  name: string;
+}
 
 export default function Retailers() {
   const [retailers, setRetailers] = useState<Retailer[]>([]);
@@ -15,7 +21,7 @@ export default function Retailers() {
     try {
       setLoading(true);
       setError('');
-      const data = await api.get<Retailer[]>('/retailers');
+      const data = await getRetailers();
       setRetailers(data);
     } catch (err: unknown) {
       setError((err as Error).message || 'Failed to load retailers');

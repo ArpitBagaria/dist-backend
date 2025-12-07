@@ -1,5 +1,24 @@
 import { useEffect, useState } from 'react';
-import { api, PrmSyncResponse, SyncLog } from '../api/client';
+import api from '../api/client';
+
+interface SyncLog {
+  id: number;
+  started_at: string;
+  finished_at: string | null;
+  status: string;
+  rows_imported: number | null;
+  duration_seconds: number | null;
+  error_message: string | null;
+}
+
+interface PrmSyncResponse {
+  run_id: number;
+  retailers_upserted: number;
+  products_upserted: number;
+  inventory_rows: number;
+  activations_rows: number;
+  status: string;
+}
 
 export default function Sync() {
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
@@ -16,8 +35,8 @@ export default function Sync() {
     try {
       setLoading(true);
       setError('');
-      const data = await api.get<{ logs: SyncLog[] }>('/debug/sync-logs?limit=10');
-      setSyncLogs(data.logs);
+      const response = await api.get('/debug/sync-logs?limit=10');
+      setSyncLogs(response.data.logs);
     } catch (err: unknown) {
       setError((err as Error).message || 'Failed to load sync logs');
     } finally {
@@ -29,8 +48,8 @@ export default function Sync() {
     try {
       setSyncing(true);
       setError('');
-      const result = await api.post<PrmSyncResponse>('/run/prm-sync');
-      setLastResult(result);
+      const response = await api.post('/run/prm-sync');
+      setLastResult(response.data);
       await loadSyncLogs();
     } catch (err: unknown) {
       setError((err as Error).message || 'Failed to run sync');
