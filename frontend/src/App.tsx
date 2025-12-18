@@ -1,26 +1,15 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
-import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
-import Retailers from './pages/Retailers';
-import Orders from './pages/Orders';
-import Reports from './pages/Reports';
-import Sync from './pages/Sync';
-
 function App() {
   return (
-    <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/retailers" element={<Retailers />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/sync" element={<Sync />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-6xl font-bold text-slate-800 mb-4">
+          Welcome to React
+        </h1>
+        <p className="text-xl text-slate-600">
+          Your Vite + React + TypeScript + Tailwind CSS app is ready!
+        </p>
+      </div>
+    </div>
   );
 }
 
